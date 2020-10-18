@@ -2,8 +2,8 @@ package com.example.androidlabs.models;
 
 public class Message {
 
-  private final String text;
-  private final Type type;
+  public static String text;
+  public Type type;
 
   public Message(String messageText, Type type) {
     this.text = messageText;

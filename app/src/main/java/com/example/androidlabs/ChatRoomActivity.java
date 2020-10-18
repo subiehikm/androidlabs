@@ -1,5 +1,9 @@
 package com.example.androidlabs;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,11 +11,16 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.androidlabs.models.Message;
 import com.example.androidlabs.models.Message.Type;
+
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,12 +29,30 @@ public class ChatRoomActivity extends AppCompatActivity {
     private final List<Message> messages = new ArrayList<>();
     MessageListAdapter messageListAdapter = new MessageListAdapter();
 
+    ArrayList<Message> database = new ArrayList<>();
+
+    SQLiteDatabase db;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
 
         setListeners();
+
+        loadDataFromDatabase();
+
+        ContentValues newRowValues = new ContentValues();
+        newRowValues.put(MyOpener.COL_RECEIVED, Message.text);
+        newRowValues.put(MyOpener.COL_SENT, Message.text);
+        long newId = db.insert(MyOpener.TABLE_NAME, null, newRowValues);
+        Message entrySent = new Message(Message.text, Type.SENT);
+        Message entryReceived = new Message(Message.text, Type.RECEIVED);
+        database.add(entrySent);
+        database.add(entryReceived);
+        messageListAdapter.notifyDataSetChanged();
+        Toast.makeText(this, "Inserted item id:"+newId, Toast.LENGTH_LONG).show();
+
     }
 
     /**
@@ -51,18 +78,18 @@ public class ChatRoomActivity extends AppCompatActivity {
         messageList.setOnItemLongClickListener(((parent, view, position, id) -> {
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
             alertDialogBuilder.
-                setTitle(getString(R.string.delete))
-                .setMessage(
-                    getString(R.string.row) + position + "\n" +
-                        getString(R.string.database) + messageListAdapter.getItemId(position)
-                )
-                .setPositiveButton(getString(R.string.yes), (click, arg) -> {
-                    messages.remove(position);
-                    messageListAdapter.notifyDataSetChanged();
-                })
-                .setNegativeButton(R.string.no, (click, arg) -> {
-                })
-                .show();
+                    setTitle(getString(R.string.delete))
+                    .setMessage(
+                            getString(R.string.row) + position + "\n" +
+                                    getString(R.string.database) + messageListAdapter.getItemId(position)
+                    )
+                    .setPositiveButton(getString(R.string.yes), (click, arg) -> {
+                        messages.remove(position);
+                        messageListAdapter.notifyDataSetChanged();
+                    })
+                    .setNegativeButton(R.string.no, (click, arg) -> {
+                    })
+                    .show();
 
             return false;
         }));
@@ -114,4 +141,22 @@ public class ChatRoomActivity extends AppCompatActivity {
             return newView;
         }
     }
+
+    private void loadDataFromDatabase() {
+        MyOpener dbOpener = new MyOpener(this);
+        db = dbOpener.getWritableDatabase();
+
+        String [] columns = {MyOpener.COL_SENT, MyOpener.COL_RECEIVED, MyOpener.COL_ID};
+        Cursor results = db.query(false, MyOpener.TABLE_NAME, columns, null, null, null, null, null, null);
+
+        int SentColumnIndex = results.getColumnIndex(MyOpener.COL_SENT);
+        int ReceivedColumnIndex = results.getColumnIndex(MyOpener.COL_RECEIVED);
+        int idColumnIndex = results.getColumnIndex(MyOpener.COL_ID);
+    }
+
+    public void SimpleCursorAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags){
+    }
+
 }
+
+
